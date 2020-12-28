@@ -3,6 +3,7 @@ from settings import Settings
 
 BEATMAP = [['d', 0], ['f', 150], ['j', 160], ['k', 180], ['d', 185], ['d', 195]]
 
+
 class Note:
 
     def __init__(self, key, theme):
@@ -10,7 +11,7 @@ class Note:
         self._theme = theme
         self.last_pos = None
         self.can_be_hit = True 
-        
+
     def _draw(self, screen):
         pos_size = None
 
@@ -46,28 +47,27 @@ class Rhythm:
         pygame.mixer.init()
         pygame.font.init()
 
-        
         self.channel = pygame.mixer.find_channel(True)
         self.channel.set_volume(0.8)
         self._font = pygame.font.SysFont('Hack NF', 50)
 
-        self._resolution = resolution        
+        self._resolution = resolution
         self.__settings = Settings('settings.ini')
         self.__screen = pygame.display.set_mode(self._resolution)
         self.__clock = pygame.time.Clock()
 
         self.should_loop = True
         self.theme = self.__settings.get_theme()
-        
+
         self.combo = 0
         self.notes = []
         self.rendered_notes = []
 
         self.hit_queue = []
         self.hit_sound = pygame.mixer.Sound('sounds/drum-hitnormal.wav')
+
         pygame.mixer.music.load('maps/blue_zenith/audio.ogg')
         pygame.mixer.music.play(-1)
-        
 
     def send_hit(self, key):
         self.hit_queue.append(key)
@@ -116,7 +116,7 @@ class Rhythm:
         self.__screen.blit(combo_surface, (20, 680))
 
         pygame.display.flip()
-       
+
     def loop(self):
         key_down = pygame.key.get_pressed()
 
