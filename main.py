@@ -1,138 +1,96 @@
 import pygame
 from settings import Settings
-
-BEATMAP = [['d', 0], ['f', 150], ['j', 160], ['k', 180], ['d', 185], ['d', 195]]
-
-
-class Note:
-
-    def __init__(self, key, theme):
-        self._key = key 
-        self._theme = theme
-        self.last_pos = None
-        self.can_be_hit = True 
-
-    def _draw(self, screen):
-        pos_size = None
-
-        if self.last_pos is None:
-            if self._key == 'd':
-                pos_size = [170, 680, 60, 30]
-            elif self._key == 'f':
-                pos_size = [290, 680, 60, 30]
-            elif self._key == 'j':
-                pos_size = [410, 680, 60, 30]
-            elif self._key == 'k':
-                pos_size = [530, 680, 60, 30]
-
-            pygame.draw.rect(screen, self._theme.get(self._key), pygame.Rect(pos_size))
-            self.last_pos = pos_size
-        else:
-            pygame.draw.rect(
-                screen,
-                self._theme.get(self._key),
-                pygame.Rect(
-                    self.last_pos[0],
-                    self.last_pos[1] - 4,
-                    self.last_pos[2],
-                    self.last_pos[3]))
-            self.last_pos[1] = self.last_pos[1] - 4
+from beatmap import Beatmap
+from note import Note
+from lane import Lane
 
 
 class Rhythm:
 
-    def __init__(self, resolution=(1280, 720)):
+    def __init__(self, beatmap, resolution=(1280, 2000)):
         pygame.mixer.pre_init(44100, -16, 2, 2048)
         pygame.init()
         pygame.mixer.init()
         pygame.font.init()
 
         self.channel = pygame.mixer.find_channel(True)
-        self.channel.set_volume(0.8)
-        self._font = pygame.font.SysFont('Hack NF', 50)
+        self.channel.set_volume(5.8)
 
-        self._resolution = resolution
-        self.__settings = Settings('settings.ini')
-        self.__screen = pygame.display.set_mode(self._resolution)
-        self.__clock = pygame.time.Clock()
+        self.beatmap = beatmap
+        self.resolution = resolution
 
-        self.should_loop = True
-        self.theme = self.__settings.get_theme()
+        self._should_loop = True
+        self._font = pygame.font.SysFont('Hack NF', 70)
+        self._clock = pygame.time.Clock()
+        self._screen = pygame.display.set_mode(resolution)
 
-        self.combo = 0
-        self.notes = []
-        self.rendered_notes = []
+        self._combo = 0
 
-        self.hit_queue = []
-        self.hit_sound = pygame.mixer.Sound('sounds/drum-hitnormal.wav')
+        self.d_lane = Lane(64)
+        self.f_lane = Lane(192)
+        self.j_lane = Lane(320)
+        self.k_lane = Lane(448)
 
-        pygame.mixer.music.load('maps/blue_zenith/audio.ogg')
+        self.populate_lanes()
+
+        pygame.mixer.music.load(self.beatmap._audio)
         pygame.mixer.music.play(-1)
+        pygame.mixer.music.set_volume(0.5)
 
-    def send_hit(self, key):
-        self.hit_queue.append(key)
+    def populate_lanes(self):
+        for lane in self.beatmap.notes:
+            if lane == '64':
+                self.d_lane.load_objects(self.beatmap.notes.get(lane))
+            elif lane == '192':
+                self.f_lane.load_objects(self.beatmap.notes.get(lane))
+            elif lane == '320':
+                self.j_lane.load_objects(self.beatmap.notes.get(lane))
+            elif lane == '448':
+                self.k_lane.load_objects(self.beatmap.notes.get(lane))
 
-    def input(self, e):
+    def input(self, event):
         if e.type == pygame.KEYDOWN and e.key == pygame.K_d:
-            self.send_hit('d')
+            self.d_lane.send_hit()
         elif e.type == pygame.KEYDOWN and e.key == pygame.K_f:
-            self.send_hit('f')
+            self.f_lane.send_hit()
         elif e.type == pygame.KEYDOWN and e.key == pygame.K_j:
-            self.send_hit('j')
+            self.j_lane.send_hit()
         elif e.type == pygame.KEYDOWN and e.key == pygame.K_k:
-            self.send_hit('k')
+            self.k_lane.send_hit()
 
     def logic(self):
-        for note in self.notes:
-            if note.last_pos[1] in range(10, 80) and note.can_be_hit:
-                for i, hit in enumerate(self.hit_queue):
-                    if hit == note._key:
-                        self.combo += 1
-                        note.can_be_hit = False
-                        self.channel.play(self.hit_sound)
-                        self.hit_queue.pop(i)
-                        print(self.hit_queue)
-
-        # Parsing 'beatmap'
-        for i, note in enumerate(BEATMAP):
-            if i not in self.rendered_notes and note[1] <= 0:
-                self.notes.append(Note(note[0], self.theme))
-                self.rendered_notes.append(i)
-            else:
-                BEATMAP[i][1] -= 1
+        pass
 
     def render(self):
-        self.__screen.fill((0, 0, 0))
-        for note in self.notes:
-            note._draw(self.__screen)
+        self._screen.fill((0, 0, 0))
 
         # Hit zones for each note
-        pygame.draw.rect(self.__screen, (0, 200, 255), (160, 10, 80, 40), 3)
-        pygame.draw.rect(self.__screen, (0, 200, 255), (280, 10, 80, 40), 3)
-        pygame.draw.rect(self.__screen, (0, 200, 255), (400, 10, 80, 40), 3)
-        pygame.draw.rect(self.__screen, (0, 200, 255), (520, 10, 80, 40), 3)
+        pygame.draw.rect(self._screen, (0, 200, 255), (160, 10, 80, 40), 3)
+        pygame.draw.rect(self._screen, (0, 200, 255), (280, 10, 80, 40), 3)
+        pygame.draw.rect(self._screen, (0, 200, 255), (400, 10, 80, 40), 3)
+        pygame.draw.rect(self._screen, (0, 200, 255), (520, 10, 80, 40), 3)
 
-        combo_surface = self._font.render(str(self.combo), False, (255, 255, 255))
-        self.__screen.blit(combo_surface, (20, 680))
+        combo_surface = self._font.render(str(self._combo), False, (255, 255, 255))
+
+        self._screen.blit(combo_surface, (700, 10))
 
         pygame.display.flip()
 
     def loop(self):
         key_down = pygame.key.get_pressed()
 
-        while self.should_loop:
+        while self._should_loop:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    self.should_loop = False
+                    self._should_loop = False
 
                 if event.type == pygame.KEYDOWN:
                     self.input(event)
 
             self.logic()
             self.render()
-            self.__clock.tick(60)
+            self._clock.tick(300)
 
-
-if __name__ == '__main__':
-    mania_clone = Rhythm()
-    mania_clone.loop()
+titania= Beatmap('maps/titania/', 'titania_basic.osu', 'audio.ogg')
+mania_clone = Rhythm(titania)
+mania_clone.loop()

@@ -8,7 +8,7 @@ class Settings:
 
         self.config = configparser.ConfigParser()
         self.config.read(path)
-        self.keys = ('d', 'f', 'j', 'k')
+        self.keys = ('64', '192', '320', '448')
 
         if 'THEME' not in self.config:
             print('No \'THEME\' section found in settings.ini!')
@@ -24,10 +24,10 @@ class Settings:
 
     def write_default_theme(self):
         self.config['THEME'] = {
-            'D_R': 255, 'D_G': 0, 'D_B': 0,
-            'F_R': 0, 'F_G': 255, 'F_B': 0,
-            'J_R': 0, 'J_G': 0, 'J_B': 255,
-            'K_R': 255, 'K_G': 0, 'K_B': 255}
+            '64_R': 255, '64_G': 0, '64_B': 0,
+            '192_R': 0, '192_G': 255, '192_B': 0,
+            '320_R': 0, '320_G': 0, '320_B': 255,
+            '448_R': 255, '448_G': 0, '448_B': 255}
         self.write()
 
     def get_theme(self):
